@@ -1,16 +1,51 @@
-# React + Vite
+# Quanta Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Real-time metrics dashboard for the Quanta multi-agent system.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Main Dashboard** — Today's session counts, tokens, costs, and activity timeseries
+- **Analytics** — 14-day agent performance, model usage, cost breakdown
+- **System** — GPU utilization, VRAM, CPU/memory from sys_snapshots
+- **Alerts** — Anomaly detection alerts from anomalies_log
 
-## React Compiler
+## Quick Start
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Install dependencies
+npm install
 
-## Expanding the ESLint configuration
+# Run both API and dev server
+npm run dev:all
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Or run separately:
+npm run server   # API on port 3001
+npm run dev      # Frontend on port 5173
+```
+
+## API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/main/summary` | Today's metrics summary |
+| `GET /api/main/timeseries` | Hourly breakdown for today |
+| `GET /api/analytics/daily` | 14-day daily stats |
+| `GET /api/analytics/agents` | Agent breakdown (7 days) |
+| `GET /api/analytics/models` | Model usage (7 days) |
+| `GET /api/system/current` | Current system stats + hourly |
+| `GET /api/system/gpu` | 24h GPU metrics |
+| `GET /api/alerts/recent` | Recent anomalies |
+| `GET /api/alerts/summary` | Alert counts by severity |
+
+## Data Source
+
+Queries `analytics.db` on the DGX Spark at:
+```
+/home/scribble0563/clawd/dashboard/data/analytics.db
+```
+
+## Tech Stack
+
+- React 19 + Vite
+- Recharts for visualization
+- Express + better-sqlite3 for API

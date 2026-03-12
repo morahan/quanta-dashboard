@@ -1,47 +1,70 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import './Dashboard.css';
 
-const alertData = [
-  { name: 'Critical', count: 3, color: '#ef4444' },
-  { name: 'Warning', count: 12, color: '#f59e0b' },
-  { name: 'Info', count: 45, color: '#3b82f6' },
-];
+const API_BASE = 'http://localhost:3001/api';
 
-const recentAlerts = [
-  { id: 1, severity: 'critical', message: 'High CPU usage on server-01', time: '2 min ago' },
-  { id: 2, severity: 'warning', message: 'Memory usage above 80%', time: '5 min ago' },
-  { id: 3, severity: 'info', message: 'Scheduled backup completed', time: '15 min ago' },
-  { id: 4, severity: 'warning', message: 'Disk space below threshold', time: '30 min ago' },
-  { id: 5, severity: 'critical', message: 'Database connection failed', time: '45 min ago' },
-];
+const SEVERITY_COLORS = {
+  critical: '#ef4444',
+  high: '#f97316',
+  medium: '#f59e0b',
+  low: '#3b82f6',
+  info: '#06b6d4'
+};
 
 function AlertsDashboard() {
-  const [alerts] = useState(recentAlerts);
+  const [summary, setSummary] = useState({ total: 0, critical: 0, high: 0, medium: 0, low: 0 });
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API_BASE}/alerts/summary`).then(r => r.json()),
+      fetch(`${API_BASE}/alerts/recent`).then(r => r.json())
+    ]).then(([summaryData, alertsData]) => {
+      setSummary(summaryData);
+      setAlerts(alertsData);
+      setLoading(false);
+    }).catch(err => {
+      console.error('Failed to fetch:', err);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) {
+    return <div className="dashboard"><p>Loading alerts...</p></div>;
+  }
+
+  const pieData = [
+    { name: 'Critical', count: summary.critical, color: SEVERITY_COLORS.critical },
+    { name: 'High', count: summary.high, color: SEVERITY_COLORS.high },
+    { name: 'Medium', count: summary.medium, color: SEVERITY_COLORS.medium },
+    { name: 'Low', count: summary.low, color: SEVERITY_COLORS.low },
+  ].filter(d => d.count > 0);
 
   return (
     <div className="dashboard">
       <header className="dashboard-header">
         <h1>🚨 Alerts Dashboard</h1>
-        <p>System alerts and notifications</p>
+        <p>System anomalies and notifications</p>
       </header>
 
       <div className="stats-grid">
         <div className="stat-card critical">
           <span className="stat-label">Critical</span>
-          <span className="stat-value">3</span>
+          <span className="stat-value">{summary.critical}</span>
         </div>
         <div className="stat-card warning">
-          <span className="stat-label">Warnings</span>
-          <span className="stat-value">12</span>
+          <span className="stat-label">High</span>
+          <span className="stat-value">{summary.high}</span>
         </div>
         <div className="stat-card info">
-          <span className="stat-label">Info</span>
-          <span className="stat-value">45</span>
+          <span className="stat-label">Medium</span>
+          <span className="stat-value">{summary.medium}</span>
         </div>
         <div className="stat-card">
-          <span className="stat-label">Total Today</span>
-          <span className="stat-value">60</span>
+          <span className="stat-label">Total</span>
+          <span className="stat-value">{summary.total}</span>
         </div>
       </div>
 
@@ -51,14 +74,16 @@ function AlertsDashboard() {
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
-                data={alertData}
+                data={pieData}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
                 outerRadius={80}
                 dataKey="count"
+                nameKey="name"
+                label={({name, count}) => `${name}: ${count}`}
               >
-                {alertData.map((entry, index) => (
+                {pieData.map((entry) => (
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
@@ -68,36 +93,44 @@ function AlertsDashboard() {
         </div>
 
         <div className="chart-card">
-          <h3>Weekly Trend</h3>
+          <h3>Distribution</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={[
-              { day: 'Mon', alerts: 12 },
-              { day: 'Tue', alerts: 19 },
-              { day: 'Wed', alerts: 8 },
-              { day: 'Thu', alerts: 15 },
-              { day: 'Fri', alerts: 22 },
-              { day: 'Sat', alerts: 5 },
-              { day: 'Sun', alerts: 3 },
-            ]}>
+            <BarChart data={pieData} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="day" stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
+              <XAxis type="number" stroke="#9ca3af" />
+              <YAxis type="category" dataKey="name" stroke="#9ca3af" width={60} />
               <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
-              <Bar dataKey="alerts" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                {pieData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         <div className="chart-card full-width">
-          <h3>Recent Alerts</h3>
+          <h3>Recent Anomalies</h3>
           <div className="alerts-list">
-            {alerts.map(alert => (
-              <div key={alert.id} className={`alert-item ${alert.severity}`}>
-                <span className={`severity-badge ${alert.severity}`}>{alert.severity}</span>
-                <span className="alert-message">{alert.message}</span>
-                <span className="alert-time">{alert.time}</span>
+            {alerts.length === 0 ? (
+              <div className="alert-item info">
+                <span className="alert-message">No recent anomalies</span>
               </div>
-            ))}
+            ) : (
+              alerts.slice(0, 15).map((alert, idx) => (
+                <div key={alert.id || idx} className={`alert-item ${alert.severity || 'info'}`}>
+                  <span className={`severity-badge ${alert.severity || 'info'}`}>
+                    {alert.severity || 'info'}
+                  </span>
+                  <span className="alert-message">
+                    {alert.rule_name || alert.message || 'Unknown anomaly'}
+                  </span>
+                  <span className="alert-time">
+                    {alert.timestamp?.slice(0, 16) || alert.date || ''}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

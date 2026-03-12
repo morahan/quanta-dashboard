@@ -144,6 +144,21 @@
   text-transform: uppercase;
 }
 
+.severity-badge.high {
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+.severity-badge.medium {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.severity-badge.low {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
 .severity-badge.critical {
   background: rgba(239, 68, 68, 0.2);
   color: #ef4444;
