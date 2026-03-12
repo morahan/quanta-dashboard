@@ -12,28 +12,38 @@ const db = new Database('/home/scribble0563/clawd/dashboard/data/analytics.db', 
 app.use(cors());
 app.use(express.json());
 
-// Helper: Parse Denver time (MST/MDT)
-// Denver is UTC-7 (MST) or UTC-6 (MDT)
-// For simplicity, we'll use UTC-7 as default
-const DENVER_OFFSET = -7; 
+// ============ NOW DASHBOARD - Real-time current state ============
 
-const getDenverTime = (utcStr) => {
-  if (!utcStr) return null;
-  const date = new Date(utcStr);
-  date.setHours(date.getHours() + DENVER_OFFSET);
-  return date.toISOString();
-};
-
-const formatDenverDate = (utcStr) => {
-  if (!utcStr) return null;
-  const date = new Date(utcStr);
-  date.setHours(date.getHours() + DENVER_OFFSET);
-  return date.toISOString().split('T')[0];
-};
+// GET /api/now - Current system + agents
+app.get('/api/now', (req, res) => {
+  try {
+    // Get latest system snapshot
+    const system = db.prepare(`
+      SELECT * FROM sys_snapshots 
+      ORDER BY timestamp DESC 
+      LIMIT 1
+    `).get();
+    
+    // Get model affinity for primary models
+    const modelAffinity = db.prepare(`
+      SELECT agent, model, session_count, usage_fraction 
+      FROM sys_agent_model_affinity 
+      WHERE primary_model = 1
+      ORDER BY session_count DESC
+    `).all();
+    
+    res.json({
+      system: system || null,
+      modelAffinity: modelAffinity,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ============ MAIN DASHBOARD APIs - Rolling 24h ============
 
-// GET /api/main/summary - Rolling 24 hours
 app.get('/api/main/summary', (req, res) => {
   try {
     const data = db.prepare(`
@@ -46,7 +56,6 @@ app.get('/api/main/summary', (req, res) => {
       WHERE session_start >= datetime('now', '-24 hours')
     `).get();
     
-    // Previous 24h for comparison
     const prevData = db.prepare(`
       SELECT 
         COUNT(*) as sessions,
@@ -81,7 +90,6 @@ app.get('/api/main/summary', (req, res) => {
   }
 });
 
-// GET /api/main/timeseries - Last 24 hours by hour
 app.get('/api/main/timeseries', (req, res) => {
   try {
     const data = db.prepare(`
@@ -104,7 +112,6 @@ app.get('/api/main/timeseries', (req, res) => {
 
 // ============ ANALYTICS DASHBOARD APIs ============
 
-// GET /api/analytics/daily - Daily stats (Denver timezone)
 app.get('/api/analytics/daily', (req, res) => {
   try {
     const days = parseInt(req.query.days) || 14;
@@ -128,7 +135,6 @@ app.get('/api/analytics/daily', (req, res) => {
   }
 });
 
-// GET /api/analytics/agents - Agent breakdown
 app.get('/api/analytics/agents', (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
@@ -153,7 +159,6 @@ app.get('/api/analytics/agents', (req, res) => {
   }
 });
 
-// GET /api/analytics/models - Model usage
 app.get('/api/analytics/models', (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
@@ -178,7 +183,6 @@ app.get('/api/analytics/models', (req, res) => {
 
 // ============ SYSTEM DASHBOARD APIs ============
 
-// GET /api/system/current - Current system stats
 app.get('/api/system/current', (req, res) => {
   try {
     const snapshot = db.prepare(`
@@ -220,7 +224,6 @@ app.get('/api/system/current', (req, res) => {
   }
 });
 
-// GET /api/system/gpu - GPU metrics
 app.get('/api/system/gpu', (req, res) => {
   try {
     const hours = parseInt(req.query.hours) || 24;
@@ -248,7 +251,6 @@ app.get('/api/system/gpu', (req, res) => {
 
 // ============ ALERTS DASHBOARD APIs ============
 
-// GET /api/alerts/recent - Recent anomalies/alerts
 app.get('/api/alerts/recent', (req, res) => {
   try {
     const data = db.prepare(`
@@ -263,7 +265,6 @@ app.get('/api/alerts/recent', (req, res) => {
   }
 });
 
-// GET /api/alerts/summary - Alert counts by severity
 app.get('/api/alerts/summary', (req, res) => {
   try {
     const total = db.prepare(`SELECT COUNT(*) as count FROM anomalies_log`).get();

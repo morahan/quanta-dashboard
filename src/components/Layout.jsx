@@ -7,6 +7,7 @@ function Layout({ children }) {
   
   const navItems = [
     { path: '/', label: 'Overview', icon: '◉' },
+    { path: '/now', label: 'Now', icon: '◐' },
     { path: '/analytics', label: 'Analytics', icon: '◈' },
     { path: '/gpu', label: 'GPU', icon: '⚡' },
     { path: '/system', label: 'System', icon: '◉' },
