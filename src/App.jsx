@@ -5,6 +5,7 @@ import MainDashboard from './pages/MainDashboard';
 import AlertsDashboard from './pages/AlertsDashboard';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import SystemDashboard from './pages/SystemDashboard';
+import GPUDashboard from './pages/GPUDashboard';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }) {
@@ -31,6 +32,7 @@ function App() {
           <Route path="alerts" element={<AlertsDashboard />} />
           <Route path="analytics" element={<AnalyticsDashboard />} />
           <Route path="system" element={<SystemDashboard />} />
+          <Route path="gpu" element={<GPUDashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>
