@@ -12,20 +12,30 @@ const db = new Database('/home/scribble0563/clawd/dashboard/data/analytics.db', 
 app.use(cors());
 app.use(express.json());
 
-// Helper: get last available date
-const getLastDate = () => {
-  const row = db.prepare(`SELECT date FROM session_metrics ORDER BY date DESC LIMIT 1`).get();
-  return row?.date || new Date().toISOString().split('T')[0];
+// Helper: Parse Denver time (MST/MDT)
+// Denver is UTC-7 (MST) or UTC-6 (MDT)
+// For simplicity, we'll use UTC-7 as default
+const DENVER_OFFSET = -7; 
+
+const getDenverTime = (utcStr) => {
+  if (!utcStr) return null;
+  const date = new Date(utcStr);
+  date.setHours(date.getHours() + DENVER_OFFSET);
+  return date.toISOString();
 };
 
-// ============ MAIN DASHBOARD APIs ============
+const formatDenverDate = (utcStr) => {
+  if (!utcStr) return null;
+  const date = new Date(utcStr);
+  date.setHours(date.getHours() + DENVER_OFFSET);
+  return date.toISOString().split('T')[0];
+};
 
-// GET /api/main/summary - Last available day's metrics
+// ============ MAIN DASHBOARD APIs - Rolling 24h ============
+
+// GET /api/main/summary - Rolling 24 hours
 app.get('/api/main/summary', (req, res) => {
   try {
-    const lastDate = getLastDate();
-    
-    // Get data for last available date
     const data = db.prepare(`
       SELECT 
         COUNT(*) as sessions,
@@ -33,29 +43,27 @@ app.get('/api/main/summary', (req, res) => {
         COALESCE(SUM(cost_usd), 0) as cost,
         COUNT(DISTINCT agent) as agents
       FROM session_metrics 
-      WHERE date = ?
-    `).get(lastDate);
+      WHERE session_start >= datetime('now', '-24 hours')
+    `).get();
     
-    // Get previous day for comparison
-    const prevDate = db.prepare(`
-      SELECT date FROM session_metrics WHERE date < ? ORDER BY date DESC LIMIT 1
-    `).get(lastDate);
+    // Previous 24h for comparison
+    const prevData = db.prepare(`
+      SELECT 
+        COUNT(*) as sessions,
+        COALESCE(SUM(cost_usd), 0) as cost
+      FROM session_metrics 
+      WHERE session_start >= datetime('now', '-48 hours') 
+        AND session_start < datetime('now', '-24 hours')
+    `).get();
     
     let sessionChange = 0;
     let costChange = 0;
     
-    if (prevDate) {
-      const prevData = db.prepare(`
-        SELECT COUNT(*) as sessions, COALESCE(SUM(cost_usd), 0) as cost
-        FROM session_metrics WHERE date = ?
-      `).get(prevDate.date);
-      
-      if (prevData.sessions > 0) {
-        sessionChange = ((data.sessions - prevData.sessions) / prevData.sessions * 100).toFixed(1);
-      }
-      if (prevData.cost > 0) {
-        costChange = ((data.cost - prevData.cost) / prevData.cost * 100).toFixed(1);
-      }
+    if (prevData.sessions > 0) {
+      sessionChange = ((data.sessions - prevData.sessions) / prevData.sessions * 100).toFixed(1);
+    }
+    if (prevData.cost > 0) {
+      costChange = ((data.cost - prevData.cost) / prevData.cost * 100).toFixed(1);
     }
     
     res.json({
@@ -65,19 +73,17 @@ app.get('/api/main/summary', (req, res) => {
       agents: data.agents || 0,
       sessionChange: parseFloat(sessionChange),
       costChange: parseFloat(costChange),
-      date: lastDate,
-      isToday: lastDate === new Date().toISOString().split('T')[0]
+      period: 'rolling-24h',
+      timezone: 'America/Denver'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/main/timeseries - Last 24 hours of available data
+// GET /api/main/timeseries - Last 24 hours by hour
 app.get('/api/main/timeseries', (req, res) => {
   try {
-    const lastDate = getLastDate();
-    
     const data = db.prepare(`
       SELECT 
         date || ' ' || substr(session_start, 12, 2) || ':00' as time,
@@ -85,10 +91,10 @@ app.get('/api/main/timeseries', (req, res) => {
         COALESCE(SUM(cost_usd), 0) as cost,
         COALESCE(SUM(total_tokens), 0) as tokens
       FROM session_metrics 
-      WHERE date = ?
+      WHERE session_start >= datetime('now', '-24 hours')
       GROUP BY date, substr(session_start, 12, 2)
       ORDER BY time
-    `).all(lastDate);
+    `).all();
     
     res.json(data);
   } catch (err) {
@@ -98,9 +104,11 @@ app.get('/api/main/timeseries', (req, res) => {
 
 // ============ ANALYTICS DASHBOARD APIs ============
 
-// GET /api/analytics/daily - Daily stats for last 14 days
+// GET /api/analytics/daily - Daily stats (Denver timezone)
 app.get('/api/analytics/daily', (req, res) => {
   try {
+    const days = parseInt(req.query.days) || 14;
+    
     const data = db.prepare(`
       SELECT 
         date,
@@ -109,7 +117,7 @@ app.get('/api/analytics/daily', (req, res) => {
         COALESCE(SUM(cost_usd), 0) as cost,
         COUNT(DISTINCT agent) as agents
       FROM session_metrics
-      WHERE date >= date('now', '-14 days')
+      WHERE date >= date('now', '-${days} days')
       GROUP BY date
       ORDER BY date
     `).all();
@@ -123,6 +131,8 @@ app.get('/api/analytics/daily', (req, res) => {
 // GET /api/analytics/agents - Agent breakdown
 app.get('/api/analytics/agents', (req, res) => {
   try {
+    const days = parseInt(req.query.days) || 7;
+    
     const data = db.prepare(`
       SELECT 
         agent,
@@ -132,7 +142,7 @@ app.get('/api/analytics/agents', (req, res) => {
         ROUND(AVG(duration_s), 1) as avg_duration,
         ROUND(AVG(tps_inferred), 1) as avg_tps
       FROM session_metrics
-      WHERE date >= date('now', '-7 days')
+      WHERE date >= date('now', '-${days} days')
       GROUP BY agent
       ORDER BY cost DESC
     `).all();
@@ -146,6 +156,8 @@ app.get('/api/analytics/agents', (req, res) => {
 // GET /api/analytics/models - Model usage
 app.get('/api/analytics/models', (req, res) => {
   try {
+    const days = parseInt(req.query.days) || 7;
+    
     const data = db.prepare(`
       SELECT 
         COALESCE(model, 'unknown') as model,
@@ -153,7 +165,7 @@ app.get('/api/analytics/models', (req, res) => {
         COALESCE(SUM(total_tokens), 0) as tokens,
         COALESCE(SUM(cost_usd), 0) as cost
       FROM session_metrics
-      WHERE date >= date('now', '-7 days')
+      WHERE date >= date('now', '-${days} days')
       GROUP BY model
       ORDER BY cost DESC
     `).all();
@@ -211,6 +223,8 @@ app.get('/api/system/current', (req, res) => {
 // GET /api/system/gpu - GPU metrics
 app.get('/api/system/gpu', (req, res) => {
   try {
+    const hours = parseInt(req.query.hours) || 24;
+    
     const data = db.prepare(`
       SELECT 
         timestamp,
@@ -222,7 +236,7 @@ app.get('/api/system/gpu', (req, res) => {
         mem_used_mb,
         mem_total_mb
       FROM sys_snapshots
-      WHERE timestamp >= datetime('now', '-24 hours')
+      WHERE timestamp >= datetime('now', '-${hours} hours')
       ORDER BY timestamp
     `).all();
     
@@ -272,10 +286,15 @@ app.get('/api/alerts/summary', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
+  const lastData = db.prepare(`SELECT MAX(session_start) as lastSession FROM session_metrics`).get();
+  const lastSnapshot = db.prepare(`SELECT MAX(timestamp) as lastSnapshot FROM sys_snapshots`).get();
+  
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    lastDataDate: getLastDate()
+    timezone: 'America/Denver',
+    lastSession: lastData.lastSession,
+    lastSnapshot: lastSnapshot.lastSnapshot
   });
 });
 

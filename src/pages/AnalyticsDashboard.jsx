@@ -11,12 +11,14 @@ function AnalyticsDashboard() {
   const [agents, setAgents] = useState([]);
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [days, setDays] = useState(14);
 
   useEffect(() => {
+    setLoading(true);
     Promise.all([
-      fetch(`${API_BASE}/analytics/daily`).then(r => r.json()),
-      fetch(`${API_BASE}/analytics/agents`).then(r => r.json()),
-      fetch(`${API_BASE}/analytics/models`).then(r => r.json())
+      fetch(`${API_BASE}/analytics/daily?days=${days}`).then(r => r.json()),
+      fetch(`${API_BASE}/analytics/agents?days=${days}`).then(r => r.json()),
+      fetch(`${API_BASE}/analytics/models?days=${days}`).then(r => r.json())
     ]).then(([dailyData, agentsData, modelsData]) => {
       setDaily(dailyData);
       setAgents(agentsData);
@@ -26,7 +28,7 @@ function AnalyticsDashboard() {
       console.error('Failed to fetch:', err);
       setLoading(false);
     });
-  }, []);
+  }, [days]);
 
   if (loading) {
     return <div className="dashboard"><p className="loading">Loading analytics...</p></div>;
@@ -50,14 +52,21 @@ function AnalyticsDashboard() {
     <div className="dashboard">
       <header className="dashboard-header">
         <h1><span>◈</span> Analytics</h1>
-        <p>14-day performance • {dateRange}</p>
+        <p>
+          {dateRange} • Denver timezone (MST)
+          <span className="time-range-selector">
+            <button className={days === 7 ? 'active' : ''} onClick={() => setDays(7)}>7D</button>
+            <button className={days === 14 ? 'active' : ''} onClick={() => setDays(14)}>14D</button>
+            <button className={days === 30 ? 'active' : ''} onClick={() => setDays(30)}>30D</button>
+          </span>
+        </p>
       </header>
 
       <div className="stats-grid">
         <div className="stat-card">
           <span className="stat-label">Total Sessions</span>
           <span className="stat-value">{formatNumber(totalSessions)}</span>
-          <span className="stat-change positive">{daily.length} days</span>
+          <span className="stat-change positive">{days} days</span>
         </div>
         <div className="stat-card">
           <span className="stat-label">Total Tokens</span>
@@ -67,7 +76,7 @@ function AnalyticsDashboard() {
         <div className="stat-card">
           <span className="stat-label">Total Cost</span>
           <span className="stat-value">${totalCost.toFixed(2)}</span>
-          <span className="stat-change positive">14-day</span>
+          <span className="stat-change positive">{days}-day</span>
         </div>
         <div className="stat-card">
           <span className="stat-label">Avg/Day</span>
@@ -78,7 +87,7 @@ function AnalyticsDashboard() {
 
       <div className="charts-grid">
         <div className="chart-card full-width">
-          <h3>Daily Sessions (14 Days)</h3>
+          <h3>Daily Sessions ({days} Days)</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={daily}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -120,7 +129,7 @@ function AnalyticsDashboard() {
         </div>
 
         <div className="chart-card">
-          <h3>Cost by Agent (7 days)</h3>
+          <h3>Cost by Agent ({days} days)</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={agents.slice(0, 8)} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -142,7 +151,7 @@ function AnalyticsDashboard() {
         </div>
 
         <div className="chart-card">
-          <h3>Model Usage (7 days)</h3>
+          <h3>Model Usage ({days} days)</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie

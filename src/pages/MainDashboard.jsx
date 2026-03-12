@@ -40,21 +40,19 @@ function MainDashboard() {
     return time.slice(0, 5);
   };
 
-  const displayDate = summary?.isToday ? 'Today' : summary?.date;
-
   return (
     <div className="dashboard">
       <header className="dashboard-header">
         <h1><span>◉</span> Overview</h1>
-        <p>Showing data for <strong>{displayDate}</strong> • Real-time from analytics.db</p>
+        <p>Rolling 24 hours • Denver timezone (MST)</p>
       </header>
 
       <div className="stats-grid">
         <div className="stat-card">
-          <span className="stat-label">Sessions</span>
+          <span className="stat-label">Sessions (24h)</span>
           <span className="stat-value">{summary?.sessions || 0}</span>
           <span className={`stat-change ${summary?.sessionChange >= 0 ? 'positive' : 'negative'}`}>
-            {summary?.sessionChange >= 0 ? '↑' : '↓'} {Math.abs(summary?.sessionChange || 0)}% vs prev day
+            {summary?.sessionChange >= 0 ? '↑' : '↓'} {Math.abs(summary?.sessionChange || 0)}% vs prev 24h
           </span>
         </div>
         <div className="stat-card">
@@ -66,7 +64,7 @@ function MainDashboard() {
           <span className="stat-label">API Cost</span>
           <span className="stat-value">${(summary?.cost || 0).toFixed(2)}</span>
           <span className={`stat-change ${summary?.costChange >= 0 ? 'positive' : 'negative'}`}>
-            {summary?.costChange >= 0 ? '↑' : '↓'} {Math.abs(summary?.costChange || 0)}% vs prev day
+            {summary?.costChange >= 0 ? '↑' : '↓'} {Math.abs(summary?.costChange || 0)}% vs prev 24h
           </span>
         </div>
         <div className="stat-card">
@@ -78,7 +76,7 @@ function MainDashboard() {
 
       <div className="charts-grid">
         <div className="chart-card full-width">
-          <h3>Activity Timeline • {displayDate}</h3>
+          <h3>Activity Timeline • Last 24 Hours</h3>
           <ResponsiveContainer width="100%" height={320}>
             <AreaChart data={timeseries.length ? timeseries : []}>
               <defs>
