@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Login from './pages/Login';
 import MainDashboard from './pages/MainDashboard';
 import AlertsDashboard from './pages/AlertsDashboard';
@@ -22,7 +22,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/" element={
           <ProtectedRoute>
-            <Layout />
+            <Layout>
+              <Outlet />
+            </Layout>
           </ProtectedRoute>
         }>
           <Route index element={<MainDashboard />} />

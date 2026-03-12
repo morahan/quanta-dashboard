@@ -1,42 +1,51 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import './Layout.css';
 
-function Layout() {
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.removeItem('quanta_auth');
-    navigate('/login');
-  };
+function Layout({ children }) {
+  const location = useLocation();
+  
+  const navItems = [
+    { path: '/', label: 'Overview', icon: '◉' },
+    { path: '/analytics', label: 'Analytics', icon: '◈' },
+    { path: '/system', label: 'System', icon: '◉' },
+    { path: '/alerts', label: 'Alerts', icon: '◈' },
+  ];
 
   return (
     <div className="layout">
-      <nav className="sidebar">
-        <div className="logo">
-          <span>⚡ Quanta</span>
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <div className="logo">
+            <span className="logo-icon">⏱</span>
+            <span className="logo-text">QUANTA</span>
+          </div>
+          <span className="logo-subtitle">Metrics Engine</span>
         </div>
-        <div className="nav-links">
-          <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>
-            <span>📊</span> Dashboard
-          </NavLink>
-          <NavLink to="/alerts" className={({ isActive }) => isActive ? 'active' : ''}>
-            <span>🚨</span> Alerts
-          </NavLink>
-          <NavLink to="/analytics" className={({ isActive }) => isActive ? 'active' : ''}>
-            <span>📈</span> Analytics
-          </NavLink>
-          <NavLink to="/system" className={({ isActive }) => isActive ? 'active' : ''}>
-            <span>🖥️</span> System
-          </NavLink>
-        </div>
+        
+        <nav className="nav-menu">
+          {navItems.map(item => (
+            <Link 
+              key={item.path} 
+              to={item.path} 
+              className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-label">{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
         <div className="sidebar-footer">
-          <button onClick={handleLogout} className="logout-btn">
-            <span>🚪</span> Logout
-          </button>
+          <div className="status-indicator">
+            <span className="status-dot"></span>
+            <span>Live</span>
+          </div>
         </div>
-      </nav>
+      </aside>
+
       <main className="main-content">
-        <Outlet />
+        {children}
       </main>
     </div>
   );

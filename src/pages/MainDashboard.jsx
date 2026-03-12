@@ -24,20 +24,27 @@ function MainDashboard() {
   }, []);
 
   if (loading) {
-    return <div className="dashboard"><p>Loading...</p></div>;
+    return <div className="dashboard"><p className="loading">Loading metrics...</p></div>;
   }
 
   const formatNumber = (num) => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
+    return num?.toString() || '0';
+  };
+
+  const formatTime = (time) => {
+    if (!time) return '';
+    const parts = time.split(' ');
+    if (parts.length >= 2) return parts[1]?.slice(0, 5) || '';
+    return time.slice(0, 5);
   };
 
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h1>📊 Quanta Dashboard</h1>
-        <p>Real-time agent metrics</p>
+        <h1><span>◉</span> Overview</h1>
+        <p>Real-time agent metrics from analytics.db</p>
       </header>
 
       <div className="stats-grid">
@@ -45,40 +52,89 @@ function MainDashboard() {
           <span className="stat-label">Sessions Today</span>
           <span className="stat-value">{summary?.sessions || 0}</span>
           <span className={`stat-change ${summary?.sessionChange >= 0 ? 'positive' : 'negative'}`}>
-            {summary?.sessionChange >= 0 ? '+' : ''}{summary?.sessionChange || 0}%
+            {summary?.sessionChange >= 0 ? '↑' : '↓'} {Math.abs(summary?.sessionChange || 0)}% vs yesterday
           </span>
         </div>
         <div className="stat-card">
-          <span className="stat-label">Tokens Today</span>
-          <span className="stat-value">{formatNumber(summary?.tokens || 0)}</span>
+          <span className="stat-label">Tokens Processed</span>
+          <span className="stat-value">{formatNumber(summary?.tokens)}</span>
+          <span className="stat-change positive">Live</span>
         </div>
         <div className="stat-card">
-          <span className="stat-label">Cost Today</span>
+          <span className="stat-label">API Cost</span>
           <span className="stat-value">${(summary?.cost || 0).toFixed(2)}</span>
           <span className={`stat-change ${summary?.costChange >= 0 ? 'positive' : 'negative'}`}>
-            {summary?.costChange >= 0 ? '+' : ''}{summary?.costChange || 0}%
+            {summary?.costChange >= 0 ? '↑' : '↓'} {Math.abs(summary?.costChange || 0)}% vs yesterday
           </span>
         </div>
         <div className="stat-card">
           <span className="stat-label">Active Agents</span>
           <span className="stat-value">{summary?.agents || 0}</span>
+          <span className="stat-change positive">Running</span>
         </div>
       </div>
 
       <div className="charts-grid">
         <div className="chart-card full-width">
-          <h3>Today's Activity</h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <h3>Today's Activity Timeline</h3>
+          <ResponsiveContainer width="100%" height={320}>
             <AreaChart data={timeseries.length ? timeseries : []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="time" stroke="#9ca3af" tick={{fontSize: 12}} />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }}
-                formatter={(value, name) => [formatNumber(value), name === 'sessions' ? 'Sessions' : name === 'tokens' ? 'Tokens' : name]}
+              <defs>
+                <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#00d4ff" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="colorTokens" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+              <XAxis 
+                dataKey="time" 
+                stroke="#64748b" 
+                tick={{fontSize: 11, fontFamily: 'JetBrains Mono'}} 
+                tickFormatter={formatTime}
               />
-              <Area type="monotone" dataKey="sessions" stroke="#3b82f6" fill="#3b82f633" strokeWidth={2} name="Sessions" />
-              <Area type="monotone" dataKey="tokens" stroke="#22c55e" fill="#22c55e22" strokeWidth={2} name="Tokens" />
+              <YAxis 
+                stroke="#64748b" 
+                tick={{fontSize: 11, fontFamily: 'JetBrains Mono'}}
+                tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#16161f', 
+                  border: '1px solid rgba(255,255,255,0.1)', 
+                  borderRadius: '10px',
+                  fontFamily: 'JetBrains Mono',
+                  fontSize: '12px'
+                }}
+                formatter={(value, name) => [
+                  name === 'sessions' ? formatNumber(value) : formatNumber(value),
+                  name === 'sessions' ? 'Sessions' : 'Tokens'
+                ]}
+                labelFormatter={(label) => `Time: ${formatTime(label)}`}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="sessions" 
+                stroke="#00d4ff" 
+                fillOpacity={1} 
+                fill="url(#colorSessions)" 
+                strokeWidth={2} 
+                name="sessions"
+                animationDuration={1000}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="tokens" 
+                stroke="#a855f7" 
+                fillOpacity={1} 
+                fill="url(#colorTokens)" 
+                strokeWidth={2} 
+                name="tokens"
+                animationDuration={1200}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>

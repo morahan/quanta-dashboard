@@ -5,35 +5,56 @@ import './Login.css';
 function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
+    
     // Simple auth - password is "quanta"
+    await new Promise(r => setTimeout(r, 500)); // Brief delay for effect
+    
     if (password === 'quanta') {
       localStorage.setItem('quanta_auth', 'true');
       navigate('/');
     } else {
-      setError('Invalid password');
+      setError('Invalid credentials');
+      setLoading(false);
     }
   };
 
   return (
     <div className="login-container">
+      <div className="login-bg">
+        <div className="login-bg-gradient"></div>
+      </div>
+      
       <div className="login-card">
-        <h1>🔐 Quanta</h1>
-        <p>Enter your password</p>
+        <div className="login-header">
+          <span className="login-logo">⏱</span>
+          <h1>QUANTA</h1>
+          <p>Metrics Engine</p>
+        </div>
+        
         <form onSubmit={handleSubmit}>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            autoFocus
-          />
+          <div className="input-group">
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter password"
+              autoFocus
+              disabled={loading}
+            />
+          </div>
           {error && <span className="error">{error}</span>}
-          <button type="submit">Sign In</button>
+          <button type="submit" disabled={loading}>
+            {loading ? 'Authenticating...' : 'Access Dashboard'}
+          </button>
         </form>
+        
         <p className="hint">Hint: quanta</p>
       </div>
     </div>
