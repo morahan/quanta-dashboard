@@ -1,15 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import Database from 'better-sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Connect to analytics DB
 const db = new Database('/home/scribble0563/clawd/dashboard/data/analytics.db', {
   readonly: true
 });
@@ -17,19 +12,21 @@ const db = new Database('/home/scribble0563/clawd/dashboard/data/analytics.db', 
 app.use(cors());
 app.use(express.json());
 
-// Helper to format dates
-const formatDate = (d) => d ? d.split(' ')[0] : null;
+// Helper: get last available date
+const getLastDate = () => {
+  const row = db.prepare(`SELECT date FROM session_metrics ORDER BY date DESC LIMIT 1`).get();
+  return row?.date || new Date().toISOString().split('T')[0];
+};
 
 // ============ MAIN DASHBOARD APIs ============
 
-// GET /api/main/summary - Today's metrics
+// GET /api/main/summary - Last available day's metrics
 app.get('/api/main/summary', (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const lastDate = getLastDate();
     
-    // Get today's data
-    const todayData = db.prepare(`
+    // Get data for last available date
+    const data = db.prepare(`
       SELECT 
         COUNT(*) as sessions,
         COALESCE(SUM(total_tokens), 0) as tokens,
@@ -37,41 +34,49 @@ app.get('/api/main/summary', (req, res) => {
         COUNT(DISTINCT agent) as agents
       FROM session_metrics 
       WHERE date = ?
-    `).get(today);
+    `).get(lastDate);
     
-    // Get yesterday's for comparison
-    const yesterdayData = db.prepare(`
-      SELECT 
-        COUNT(*) as sessions,
-        COALESCE(SUM(cost_usd), 0) as cost
-      FROM session_metrics 
-      WHERE date = ?
-    `).get(yesterday);
+    // Get previous day for comparison
+    const prevDate = db.prepare(`
+      SELECT date FROM session_metrics WHERE date < ? ORDER BY date DESC LIMIT 1
+    `).get(lastDate);
     
-    // Calculate changes
-    const sessionChange = yesterdayData.sessions ? 
-      ((todayData.sessions - yesterdayData.sessions) / yesterdayData.sessions * 100).toFixed(1) : 0;
-    const costChange = yesterdayData.cost ? 
-      ((todayData.cost - yesterdayData.cost) / yesterdayData.cost * 100).toFixed(1) : 0;
+    let sessionChange = 0;
+    let costChange = 0;
+    
+    if (prevDate) {
+      const prevData = db.prepare(`
+        SELECT COUNT(*) as sessions, COALESCE(SUM(cost_usd), 0) as cost
+        FROM session_metrics WHERE date = ?
+      `).get(prevDate.date);
+      
+      if (prevData.sessions > 0) {
+        sessionChange = ((data.sessions - prevData.sessions) / prevData.sessions * 100).toFixed(1);
+      }
+      if (prevData.cost > 0) {
+        costChange = ((data.cost - prevData.cost) / prevData.cost * 100).toFixed(1);
+      }
+    }
     
     res.json({
-      sessions: todayData.sessions || 0,
-      tokens: todayData.tokens || 0,
-      cost: todayData.cost || 0,
-      agents: todayData.agents || 0,
+      sessions: data.sessions || 0,
+      tokens: data.tokens || 0,
+      cost: data.cost || 0,
+      agents: data.agents || 0,
       sessionChange: parseFloat(sessionChange),
       costChange: parseFloat(costChange),
-      date: today
+      date: lastDate,
+      isToday: lastDate === new Date().toISOString().split('T')[0]
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/main/timeseries - Hourly data for today
+// GET /api/main/timeseries - Last 24 hours of available data
 app.get('/api/main/timeseries', (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const lastDate = getLastDate();
     
     const data = db.prepare(`
       SELECT 
@@ -83,7 +88,7 @@ app.get('/api/main/timeseries', (req, res) => {
       WHERE date = ?
       GROUP BY date, substr(session_start, 12, 2)
       ORDER BY time
-    `).all(today);
+    `).all(lastDate);
     
     res.json(data);
   } catch (err) {
@@ -164,14 +169,12 @@ app.get('/api/analytics/models', (req, res) => {
 // GET /api/system/current - Current system stats
 app.get('/api/system/current', (req, res) => {
   try {
-    // Get latest snapshot
     const snapshot = db.prepare(`
       SELECT * FROM sys_snapshots 
       ORDER BY timestamp DESC 
       LIMIT 1
     `).get();
     
-    // Get hourly averages for last 24 hours
     const hourly = db.prepare(`
       SELECT 
         substr(timestamp, 1, 13) as hour,
@@ -185,7 +188,6 @@ app.get('/api/system/current', (req, res) => {
       ORDER BY hour
     `).all();
     
-    // Get VRAM trend
     const vramTrend = db.prepare(`
       SELECT 
         timestamp,
@@ -270,7 +272,11 @@ app.get('/api/alerts/summary', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    lastDataDate: getLastDate()
+  });
 });
 
 app.listen(PORT, () => {

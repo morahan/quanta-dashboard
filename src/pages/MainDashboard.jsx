@@ -40,31 +40,33 @@ function MainDashboard() {
     return time.slice(0, 5);
   };
 
+  const displayDate = summary?.isToday ? 'Today' : summary?.date;
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
         <h1><span>◉</span> Overview</h1>
-        <p>Real-time agent metrics from analytics.db</p>
+        <p>Showing data for <strong>{displayDate}</strong> • Real-time from analytics.db</p>
       </header>
 
       <div className="stats-grid">
         <div className="stat-card">
-          <span className="stat-label">Sessions Today</span>
+          <span className="stat-label">Sessions</span>
           <span className="stat-value">{summary?.sessions || 0}</span>
           <span className={`stat-change ${summary?.sessionChange >= 0 ? 'positive' : 'negative'}`}>
-            {summary?.sessionChange >= 0 ? '↑' : '↓'} {Math.abs(summary?.sessionChange || 0)}% vs yesterday
+            {summary?.sessionChange >= 0 ? '↑' : '↓'} {Math.abs(summary?.sessionChange || 0)}% vs prev day
           </span>
         </div>
         <div className="stat-card">
           <span className="stat-label">Tokens Processed</span>
           <span className="stat-value">{formatNumber(summary?.tokens)}</span>
-          <span className="stat-change positive">Live</span>
+          <span className="stat-change positive">✓ Recorded</span>
         </div>
         <div className="stat-card">
           <span className="stat-label">API Cost</span>
           <span className="stat-value">${(summary?.cost || 0).toFixed(2)}</span>
           <span className={`stat-change ${summary?.costChange >= 0 ? 'positive' : 'negative'}`}>
-            {summary?.costChange >= 0 ? '↑' : '↓'} {Math.abs(summary?.costChange || 0)}% vs yesterday
+            {summary?.costChange >= 0 ? '↑' : '↓'} {Math.abs(summary?.costChange || 0)}% vs prev day
           </span>
         </div>
         <div className="stat-card">
@@ -76,7 +78,7 @@ function MainDashboard() {
 
       <div className="charts-grid">
         <div className="chart-card full-width">
-          <h3>Today's Activity Timeline</h3>
+          <h3>Activity Timeline • {displayDate}</h3>
           <ResponsiveContainer width="100%" height={320}>
             <AreaChart data={timeseries.length ? timeseries : []}>
               <defs>
