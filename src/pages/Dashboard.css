@@ -1,0 +1,281 @@
+.dashboard {
+  min-height: 100vh;
+  background: transparent;
+  color: #f8fafc;
+  padding: 2rem;
+}
+
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #22c55e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dashboard-header p {
+  color: #94a3b8;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stat-card.critical {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.stat-card.warning {
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.stat-card.info {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #94a3b8;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.stat-change {
+  font-size: 0.875rem;
+}
+
+.stat-change.positive {
+  color: #22c55e;
+}
+
+.stat-change.negative {
+  color: #ef4444;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.chart-card {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.chart-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.chart-card h3 {
+  margin-bottom: 1rem;
+  color: #e2e8f0;
+  font-size: 1.1rem;
+}
+
+/* Recharts dark theme */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #374151;
+}
+
+.recharts-text {
+  fill: #9ca3af;
+}
+
+/* Alerts list */
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 8px;
+  border-left: 3px solid;
+}
+
+.alert-item.critical {
+  border-color: #ef4444;
+}
+
+.alert-item.warning {
+  border-color: #f59e0b;
+}
+
+.alert-item.info {
+  border-color: #3b82f6;
+}
+
+.severity-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.severity-badge.critical {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.severity-badge.warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.severity-badge.info {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.alert-message {
+  flex: 1;
+  color: #e2e8f0;
+}
+
+.alert-time {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+/* Disk usage */
+.disk-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.disk-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.disk-name {
+  width: 60px;
+  color: #94a3b8;
+}
+
+.disk-bar {
+  flex: 1;
+  height: 8px;
+  background: #374151;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.disk-used {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #f59e0b, #ef4444);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.disk-percent {
+  width: 80px;
+  text-align: right;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+/* Server grid */
+.server-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.server-item {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 8px;
+  padding: 1rem;
+  border-left: 3px solid #22c55e;
+}
+
+.server-item.warning {
+  border-color: #f59e0b;
+}
+
+.server-item.critical {
+  border-color: #ef4444;
+}
+
+.server-name {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.server-status {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.server-status.healthy {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.server-status.warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.server-status.critical {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.server-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.server-uptime {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+@media (max-width: 1024px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
