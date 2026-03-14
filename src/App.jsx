@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Login from './pages/Login';
 import MainDashboard from './pages/MainDashboard';
-import AlertsDashboard from './pages/AlertsDashboard';
+import NowDashboard from './pages/NowDashboard';
+import TokensDashboard from './pages/TokensDashboard';
+import CostsDashboard from './pages/CostsDashboard';
+import ModelsDashboard from './pages/ModelsDashboard';
+import GPUDashboard from './pages/GPUDashboard';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import SystemDashboard from './pages/SystemDashboard';
-import GPUDashboard from './pages/GPUDashboard';
-import NowDashboard from './pages/NowDashboard';
+import AlertsDashboard from './pages/AlertsDashboard';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }) {
@@ -31,10 +34,13 @@ function App() {
         }>
           <Route index element={<MainDashboard />} />
           <Route path="now" element={<NowDashboard />} />
-          <Route path="alerts" element={<AlertsDashboard />} />
+          <Route path="tokens" element={<TokensDashboard />} />
+          <Route path="costs" element={<CostsDashboard />} />
+          <Route path="models" element={<ModelsDashboard />} />
+          <Route path="gpu" element={<GPUDashboard />} />
           <Route path="analytics" element={<AnalyticsDashboard />} />
           <Route path="system" element={<SystemDashboard />} />
-          <Route path="gpu" element={<GPUDashboard />} />
+          <Route path="alerts" element={<AlertsDashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -8,8 +8,11 @@ function Layout({ children }) {
   const navItems = [
     { path: '/', label: 'Overview', icon: '◉' },
     { path: '/now', label: 'Now', icon: '◐' },
-    { path: '/analytics', label: 'Analytics', icon: '◈' },
+    { path: '/tokens', label: 'Tokens', icon: '◈' },
+    { path: '/costs', label: 'Costs', icon: '$' },
+    { path: '/models', label: 'Models', icon: '◉' },
     { path: '/gpu', label: 'GPU', icon: '⚡' },
+    { path: '/analytics', label: 'Analytics', icon: '◈' },
     { path: '/system', label: 'System', icon: '◉' },
     { path: '/alerts', label: 'Alerts', icon: '◈' },
   ];
