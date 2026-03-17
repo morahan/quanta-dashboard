@@ -32,7 +32,7 @@ const getDateRange = (days) => {
 
 // ============ NOW DASHBOARD - Real-time current state ============
 
-app.get('/api/now', (req, res) => {
+app.get('/api/quanta/now', (req, res) => {
   try {
     const system = db.prepare(`SELECT * FROM sys_snapshots ORDER BY timestamp DESC LIMIT 1`).get();
     const modelAffinity = db.prepare(`SELECT agent, model, session_count, usage_fraction FROM sys_agent_model_affinity WHERE primary_model = 1 ORDER BY session_count DESC`).all();
@@ -49,7 +49,7 @@ app.get('/api/now', (req, res) => {
 
 // ============ MAIN DASHBOARD APIs - Rolling 24h ============
 
-app.get('/api/main/summary', (req, res) => {
+app.get('/api/quanta/main/summary', (req, res) => {
   try {
     // Use last available date for summary
     const lastDate = getLastDate();
@@ -99,7 +99,7 @@ app.get('/api/main/summary', (req, res) => {
   }
 });
 
-app.get('/api/main/timeseries', (req, res) => {
+app.get('/api/quanta/main/timeseries', (req, res) => {
   try {
     const lastDate = getLastDate();
     
@@ -123,7 +123,7 @@ app.get('/api/main/timeseries', (req, res) => {
 
 // ============ ANALYTICS DASHBOARD APIs ============
 
-app.get('/api/analytics/daily', (req, res) => {
+app.get('/api/quanta/analytics/daily', (req, res) => {
   try {
     const days = parseInt(req.query.days) || 14;
     const { startDate, endDate } = getDateRange(days);
@@ -147,7 +147,7 @@ app.get('/api/analytics/daily', (req, res) => {
   }
 });
 
-app.get('/api/analytics/agents', (req, res) => {
+app.get('/api/quanta/analytics/agents', (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
     const { startDate, endDate } = getDateRange(days);
@@ -172,7 +172,7 @@ app.get('/api/analytics/agents', (req, res) => {
   }
 });
 
-app.get('/api/analytics/models', (req, res) => {
+app.get('/api/quanta/analytics/models', (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
     const { startDate, endDate } = getDateRange(days);
@@ -197,7 +197,7 @@ app.get('/api/analytics/models', (req, res) => {
 
 // ============ SYSTEM DASHBOARD APIs ============
 
-app.get('/api/system/current', (req, res) => {
+app.get('/api/quanta/system/current', (req, res) => {
   try {
     const snapshot = db.prepare(`SELECT * FROM sys_snapshots ORDER BY timestamp DESC LIMIT 1`).get();
     
@@ -227,7 +227,7 @@ app.get('/api/system/current', (req, res) => {
   }
 });
 
-app.get('/api/system/gpu', (req, res) => {
+app.get('/api/quanta/system/gpu', (req, res) => {
   try {
     const hours = parseInt(req.query.hours) || 24;
     
@@ -246,7 +246,7 @@ app.get('/api/system/gpu', (req, res) => {
 
 // ============ ALERTS DASHBOARD APIs ============
 
-app.get('/api/alerts/recent', (req, res) => {
+app.get('/api/quanta/alerts/recent', (req, res) => {
   try {
     const data = db.prepare(`SELECT * FROM anomalies_log ORDER BY timestamp DESC LIMIT 50`).all();
     res.json(data);
@@ -255,7 +255,7 @@ app.get('/api/alerts/recent', (req, res) => {
   }
 });
 
-app.get('/api/alerts/summary', (req, res) => {
+app.get('/api/quanta/alerts/summary', (req, res) => {
   try {
     const total = db.prepare(`SELECT COUNT(*) as count FROM anomalies_log`).get();
     const critical = db.prepare(`SELECT COUNT(*) as count FROM anomalies_log WHERE severity = 'critical'`).get();
@@ -276,7 +276,7 @@ app.get('/api/alerts/summary', (req, res) => {
 });
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/quanta/health', (req, res) => {
   const lastData = db.prepare(`SELECT MAX(session_start) as lastSession FROM session_metrics`).get();
   const lastSnapshot = db.prepare(`SELECT MAX(timestamp) as lastSnapshot FROM sys_snapshots`).get();
   
@@ -292,4 +292,29 @@ app.get('/api/health', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Quanta API server running on port ${PORT}`);
+});
+
+// Daily GPU metrics for historical trends
+app.get('/api/quanta/system/gpu/daily', (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 7;
+    const data = db.prepare(`
+      SELECT 
+        substr(timestamp, 1, 10) as date,
+        ROUND(AVG(gpu_util_pct), 1) as avg_util,
+        ROUND(MAX(gpu_util_pct), 1) as max_util,
+        ROUND(AVG(gpu_temp_c), 1) as avg_temp,
+        ROUND(AVG(vram_used_gb), 1) as avg_vram,
+        ROUND(MAX(vram_used_gb), 1) as max_vram,
+        COUNT(*) as snapshots
+      FROM sys_snapshots
+      WHERE timestamp >= datetime('now', '-${days} days')
+      GROUP BY substr(timestamp, 1, 10)
+      ORDER BY date
+    `).all();
+    
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
