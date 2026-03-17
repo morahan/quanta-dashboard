@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, Legend } from 'recharts';
 import './Dashboard.css';
 
-const API_BASE = 'http://localhost:3001/api/quanta';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001/api/quanta';
 
 function TokensDashboard() {
   const [dailyTokens, setDailyTokens] = useState([]);

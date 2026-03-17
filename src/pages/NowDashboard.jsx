@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './Dashboard.css';
 
-const API_BASE = 'http://localhost:3001/api/quanta';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001/api/quanta';
 
 // Agent config - in production this would come from the API
 const AGENT_CONFIG = {
