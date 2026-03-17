@@ -258,10 +258,10 @@ app.get('/api/quanta/alerts/recent', (req, res) => {
 app.get('/api/quanta/alerts/summary', (req, res) => {
   try {
     const total = db.prepare(`SELECT COUNT(*) as count FROM anomalies_log`).get();
-    const critical = db.prepare(`SELECT COUNT(*) as count FROM anomalies_log WHERE severity = 'critical'`).get();
-    const high = db.prepare(`SELECT COUNT(*) as count FROM anomalies_log WHERE severity = 'high'`).get();
-    const medium = db.prepare(`SELECT COUNT(*) as count FROM anomalies_log WHERE severity = 'medium'`).get();
-    const low = db.prepare(`SELECT COUNT(*) as count FROM anomalies_log WHERE severity = 'low'`).get();
+    const critical = db.prepare(`SELECT COUNT(*) as count FROM anomalies_log WHERE level = 'critical'`).get();
+    const high = db.prepare(`SELECT COUNT(*) as count FROM anomalies_log WHERE level = 'high'`).get();
+    const medium = db.prepare(`SELECT COUNT(*) as count FROM anomalies_log WHERE level = 'medium'`).get();
+    const low = db.prepare(`SELECT COUNT(*) as count FROM anomalies_log WHERE level = 'low'`).get();
     
     res.json({
       total: total.count,
