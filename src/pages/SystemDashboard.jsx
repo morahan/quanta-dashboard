@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import './Dashboard.css';
 
-const API_BASE = https://public-rooms-smash.loca.lt/api/quanta;
+const API_BASE = https://mighty-nights-grow.loca.lt/api/quanta;
 
 function SystemDashboard() {
   const [system, setSystem] = useState(null);

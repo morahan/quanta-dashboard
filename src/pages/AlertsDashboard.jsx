@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import './Dashboard.css';
 
-const API_BASE = https://public-rooms-smash.loca.lt/api/quanta;
+const API_BASE = https://mighty-nights-grow.loca.lt/api/quanta;
 
 const SEVERITY_COLORS = {
   critical: '#ef4444',

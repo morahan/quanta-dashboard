@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './Dashboard.css';
 
-const API_BASE = https://public-rooms-smash.loca.lt/api/quanta;
+const API_BASE = https://mighty-nights-grow.loca.lt/api/quanta;
 
 // Agent config - in production this would come from the API
 const AGENT_CONFIG = {
